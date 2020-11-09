@@ -1,5 +1,9 @@
 package com.example.seckill.service.impl;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.example.seckill.common.FastJsonUtils;
+import com.example.seckill.common.HttpUtil;
 import com.example.seckill.common.JsonBean;
 import com.example.seckill.domain.mapper.OrderinfoMapper;
 import com.example.seckill.domain.mapper.ProductMapper;
@@ -7,6 +11,7 @@ import com.example.seckill.domain.model.Orderinfo;
 import com.example.seckill.domain.model.Product;
 import com.example.seckill.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -22,12 +27,24 @@ import java.util.UUID;
 @Service
 public class OrderServiceImpl implements OrderService {
 
+    @Value("${application.rabbitMQ}")
+    private String url;
     @Autowired
     private OrderinfoMapper orderinfoMapper;
     @Autowired
     private ProductMapper productMapper;
     @Autowired
     private RedisTemplate redisTemplate;
+
+    @Override
+    public JsonBean insert(Orderinfo orderinfo) {
+        int i = orderinfoMapper.insertSelective(orderinfo);
+        if (i > 0){
+            return new JsonBean(0,"下单成功",null);
+        }else {
+            return new JsonBean(-1,"下单失败",null);
+        }
+    }
 
     /**
      * @param * @param productId
@@ -72,12 +89,21 @@ public class OrderServiceImpl implements OrderService {
                     orderinfo.setUserid(userId);
                     orderinfo.setStatus("0");
                     orderinfo.setPrice(product.getSeckillPrice());
-                    int i1 = orderinfoMapper.insertSelective(orderinfo);
-                    if (i1 > 0) {
+                    String orderInfoJson = FastJsonUtils.convertObjectToJSON(orderinfo);
+                    // 发送请求
+                    String returnData = HttpUtil.doPost2(url, JSON.parseObject(orderInfoJson));
+                    JsonBean jsonBean = (JsonBean) FastJsonUtils.convertJsonToObject(returnData, JsonBean.class);
+                    if (jsonBean.getCode() == 0){
                         return new JsonBean(0, "恭喜抢到商品，请于下单成功五分钟内支付！", orderinfo);
                     } else {
                         return new JsonBean(-1, "抢购失败！", null);
                     }
+                    /*int i1 = orderinfoMapper.insertSelective(orderinfo);
+                    if (i1 > 0) {
+                        return new JsonBean(0, "恭喜抢到商品，请于下单成功五分钟内支付！", orderinfo);
+                    } else {
+                        return new JsonBean(-1, "抢购失败！", null);
+                    }*/
                 } else {
                     return new JsonBean(-1, "操作失败！", null);
                 }

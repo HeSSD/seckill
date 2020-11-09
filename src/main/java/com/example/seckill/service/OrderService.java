@@ -1,6 +1,7 @@
 package com.example.seckill.service;
 
 import com.example.seckill.common.JsonBean;
+import com.example.seckill.domain.model.Orderinfo;
 
 /**
  * Created with IntelliJ IDEA.
@@ -10,6 +11,8 @@ import com.example.seckill.common.JsonBean;
  * @Description:
  */
 public interface OrderService {
+
+    JsonBean insert(Orderinfo orderinfo);
 
     JsonBean createOrder(Integer productId,Integer userId);
 

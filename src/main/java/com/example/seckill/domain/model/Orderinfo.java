@@ -1,6 +1,8 @@
 package com.example.seckill.domain.model;
 
-public class Orderinfo {
+import java.io.Serializable;
+
+public class Orderinfo implements Serializable {
     private Integer id;
 
     private String orderno;
